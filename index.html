@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure AES Document Tool</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the document sharing platform theme */
+        :root {
+            --primary-color: #4f46e5; /* Indigo 600 */
+            --secondary-color: #6366f1; /* Indigo 500 */
+            --success-color: #10b981; /* Emerald 500 */
+            --bg-color: #eef2ff; /* Lightest Indigo for background */
+            --card-color: #ffffff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+        }
+        .btn-base {
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-encrypt {
+            background-color: var(--primary-color);
+        }
+        .btn-encrypt:hover {
+            background-color: var(--secondary-color);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -4px rgba(79, 70, 229, 0.1);
+            transform: translateY(-1px);
+        }
+        .btn-decrypt {
+            background-color: var(--success-color);
+        }
+        .btn-decrypt:hover {
+            background-color: #059669; /* Emerald 600 */
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3), 0 4px 6px -4px rgba(16, 185, 129, 0.1);
+            transform: translateY(-1px);
+        }
+        .input-text {
+            border-color: #d1d5db;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-text:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        }
+    </style>
+    <!-- Load CryptoJS library for AES encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-5xl bg-card-color shadow-2xl rounded-2xl p-6 sm:p-12 border border-gray-100">
+
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-2 text-center">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Secure AES Vault</span>
+        </h1>
+        <p class="text-center text-sm sm:text-base text-gray-600 font-medium mb-8 border-b pb-4">
+            Perform military-grade encryption and decryption entirely within your browser.
+        </p>
+
+        <!-- Message Box for feedback -->
+        <div id="message-box" class="hidden p-4 rounded-xl text-sm mb-8 transition-opacity duration-300 shadow-md" role="alert"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+            <!-- Encryption Section -->
+            <div class="p-8 bg-indigo-50 border-2 border-indigo-200 rounded-2xl shadow-xl">
+                <div class="flex items-center text-indigo-800 mb-6">
+                    <!-- Lock Icon for Encryption -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <h2 class="text-2xl font-bold">Encrypt Document</h2>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-white rounded-lg border">
+                        <label for="encryptFile" class="block text-sm font-semibold text-gray-700 mb-2">1. Select File to Protect</label>
+                        <input type="file" id="encryptFile" class="w-full input-text p-2 rounded-lg border-gray-300" />
+                    </div>
+
+                    <div class="p-4 bg-white rounded-lg border relative">
+                        <label for="encryptKey" class="block text-sm font-semibold text-gray-700 mb-2">2. Set Unique Secret Key</label>
+                        <input type="password" id="encryptKey" placeholder="A strong key is vital for security" class="w-full input-text p-3 rounded-lg border-gray-300 pr-10" />
+                        <button type="button" onclick="togglePasswordVisibility('encryptKey', this)" class="absolute right-4 top-1/2 mt-3 text-gray-500 hover:text-indigo-600 transition">
+                             <!-- Eye Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="encryptButton" class="w-full btn-base btn-encrypt text-white mt-8">
+                    Encrypt & Download <span class="ml-2 font-mono">.enc</span> File
+                </button>
+            </div>
+
+            <!-- Decryption Section -->
+            <div class="p-8 bg-green-50 border-2 border-green-200 rounded-2xl shadow-xl">
+                <div class="flex items-center text-green-800 mb-6">
+                    <!-- Unlock Icon for Decryption -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M12 2v2"/><path d="M2.05 13.51A2 2 0 0 1 3 13h18a2 2 0 0 1 .95.51"/></svg>
+                    <h2 class="text-2xl font-bold">Decrypt Document</h2>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-white rounded-lg border">
+                        <label for="decryptFile" class="block text-sm font-semibold text-gray-700 mb-2">1. Select Encrypted File</label>
+                        <input type="file" id="decryptFile" accept=".enc" class="w-full input-text p-2 rounded-lg border-gray-300" />
+                    </div>
+
+                    <div class="p-4 bg-white rounded-lg border relative">
+                        <label for="decryptKey" class="block text-sm font-semibold text-gray-700 mb-2">2. Enter Shared Secret Key</label>
+                        <input type="password" id="decryptKey" placeholder="Input the key from the sender" class="w-full input-text p-3 rounded-lg border-gray-300 pr-10" />
+                        <button type="button" onclick="togglePasswordVisibility('decryptKey', this)" class="absolute right-4 top-1/2 mt-3 text-gray-500 hover:text-green-600 transition">
+                            <!-- Eye Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="decryptButton" class="w-full btn-base btn-decrypt text-white mt-8">
+                    Decrypt & Download Original File
+                </button>
+            </div>
+        </div>
+        <p class="text-center text-xs text-gray-500 mt-8">
+            The security of your document depends entirely on the secrecy and strength of your chosen password.
+        </p>
+    </div>
+
+    <script>
+        // Utility function to toggle password visibility
+        function togglePasswordVisibility(inputId, buttonElement) {
+            const input = document.getElementById(inputId);
+            const icon = buttonElement.querySelector('svg');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.add('text-indigo-600');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('text-indigo-600');
+            }
+        }
+
+        // Utility function to display messages to the user
+        const messageBox = document.getElementById('message-box');
+        function showMessage(text, isError = false) {
+            messageBox.textContent = text;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'border-red-400', 'bg-blue-100', 'text-blue-800', 'border-blue-400');
+
+            if (isError) {
+                messageBox.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-400');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-400');
+            }
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+
+        // --- File Handling Utilities ---
+
+        /**
+         * Reads a file and returns its content as a Base64 Data URL string.
+         * This preserves both the file content and its original MIME type.
+         * @param {File} file - The file object to read.
+         * @returns {Promise<string>} A promise resolving to the Data URL string.
+         */
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error("Failed to read file."));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /**
+         * Reads a file and returns its content as a plain text string.
+         * Used for reading the ciphertext from the encrypted file.
+         * @param {File} file - The file object to read.
+         * @returns {Promise<string>} A promise resolving to the file content string.
+         */
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error("Failed to read file as text."));
+                reader.readAsText(file);
+            });
+        }
+
+        /**
+         * Creates a Blob from a Data URL and prompts the user to download it.
+         * @param {string} dataUrl - The Data URL (Base64 string with header).
+         * @param {string} filename - The desired filename for the download.
+         */
+        function downloadDataUrl(dataUrl, filename) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Encryption Logic ---
+
+        document.getElementById('encryptButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('encryptFile');
+            const passwordInput = document.getElementById('encryptKey');
+            const file = fileInput.files[0];
+            const password = passwordInput.value;
+
+            if (!file) return showMessage("Please select a file to encrypt.", true);
+            if (!password) return showMessage("Please enter a password/key.", true);
+
+            try {
+                showMessage("Encrypting document... Please wait.", false);
+                
+                // 1. Read the file into a Data URL (Base64)
+                const dataUrl = await readFileAsDataURL(file);
+
+                // 2. Encrypt the entire Data URL string using AES
+                // CryptoJS handles salting and key derivation (PBKDF2) automatically 
+                // when encrypting a string with a passphrase.
+                const encrypted = CryptoJS.AES.encrypt(dataUrl, password).toString();
+
+                // 3. Create a Data URL for the resulting ciphertext (plain text content)
+                // We use 'application/octet-stream' and a custom '.enc' extension
+                // to indicate it's encrypted data. We encode the ciphertext to Base64 
+                // to handle characters safely in the download process.
+                const encryptedDataUrl = `data:application/octet-stream;base64,${btoa(encrypted)}`;
+                
+                const newFilename = `${file.name}.enc`;
+                
+                // 4. Download the encrypted file
+                downloadDataUrl(encryptedDataUrl, newFilename);
+
+                showMessage(`Encryption successful! Downloaded file: ${newFilename}. Remember to share the secret password securely!`, false);
+            } catch (error) {
+                console.error("Encryption Error:", error);
+                showMessage("Encryption failed. Check console for details.", true);
+            }
+        });
+
+        // --- Decryption Logic ---
+
+        document.getElementById('decryptButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('decryptFile');
+            const passwordInput = document.getElementById('decryptKey');
+            const encryptedFile = fileInput.files[0];
+            const password = passwordInput.value;
+
+            if (!encryptedFile) return showMessage("Please select an encrypted file.", true);
+            if (!password) return showMessage("Please enter the password/key.", true);
+
+            try {
+                showMessage("Decrypting document... Please wait.", false);
+                
+                // 1. Read the encrypted file content (ciphertext string)
+                const encryptedText = await readFileAsText(encryptedFile);
+
+                // 2. Extract the actual ciphertext from the Base64/MIME wrapper, if present
+                let ciphertext = encryptedText;
+                // If it's a file saved with our utility using base64, we must decode it first
+                if (encryptedText.startsWith('data:')) {
+                    // Extract the base64 content part
+                    const base64Content = encryptedText.split(',')[1];
+                    // Decode the Base64 back to the raw ciphertext string
+                    ciphertext = atob(base64Content);
+                }
+
+                // 3. Decrypt the ciphertext using AES and the password
+                const decryptedBytes = CryptoJS.AES.decrypt(ciphertext, password);
+                
+                // Attempt to convert the decrypted bytes to a UTF-8 string.
+                const originalDataUrl = decryptedBytes.toString(CryptoJS.enc.Utf8);
+                
+                // Basic validation: A valid decrypted file content (Data URL) must start with 'data:'
+                if (!originalDataUrl || !originalDataUrl.startsWith('data:')) {
+                    // This typically means the password was wrong or the file was corrupted
+                    throw new Error("Decryption failed. Incorrect password or corrupted file.");
+                }
+
+                // 4. Determine original filename
+                let originalFilename = encryptedFile.name;
+                if (originalFilename.endsWith('.enc')) {
+                    originalFilename = originalFilename.slice(0, -4);
+                } else {
+                    originalFilename = `decrypted_${originalFilename}`;
+                }
+
+                // 5. Download the original file content (Data URL)
+                downloadDataUrl(originalDataUrl, originalFilename);
+
+                showMessage(`Decryption successful! Downloaded original file: ${originalFilename}.`, false);
+            } catch (error) {
+                console.error("Decryption Error:", error);
+                // Check for a specific error message
+                const displayMessage = error.message.includes("Incorrect password") 
+                    ? "Decryption failed. Please double-check the password." 
+                    : "Decryption failed. The file may be corrupted or was not encrypted with this tool.";
+                showMessage(displayMessage, true);
+            }
+        });
+    </script>
+</body>
+</html>
